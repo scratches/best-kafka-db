@@ -50,7 +50,7 @@ public class MessagingTests {
 	@Test
 	public void testMessaging() throws Exception {
 		Awaitility.waitAtMost(Duration.ofSeconds(30)).until(this.consumer::getItemCount, not(equalTo(0)));
-		assertThat(consumer.getItemCount()).isEqualTo(2);
+		assertThat(consumer.getItemCount()).isGreaterThanOrEqualTo(2);
 	}
 
 }
