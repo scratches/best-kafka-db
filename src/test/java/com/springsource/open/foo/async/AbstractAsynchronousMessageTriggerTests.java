@@ -44,7 +44,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 
 import static org.junit.Assert.assertTrue;
 
-@SpringBootTest
+@SpringBootTest("spring.kafka.consumer.group-id=test")
 public abstract class AbstractAsynchronousMessageTriggerTests implements ApplicationContextAware {
 
 	@Autowired
