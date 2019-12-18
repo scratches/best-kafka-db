@@ -29,7 +29,7 @@ public class AsynchronousMessageTriggerAndPartialRollbackTests extends AbstractA
 	@Test
 	public void testPartialFailureWithDuplicateMessage() {
 		kafkaTemplate.executeInTransaction(t -> t.send("async", "foo"));
-		kafkaTemplate.executeInTransaction(t -> t.send("async", "bar.fail.partia"));
+		kafkaTemplate.executeInTransaction(t -> t.send("async", "bar.fail.partial"));
 	}
 
 	@Override

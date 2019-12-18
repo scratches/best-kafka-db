@@ -25,8 +25,6 @@ import java.util.regex.Pattern;
 import javax.sql.DataSource;
 
 import com.springsource.open.foo.Handler;
-import com.springsource.open.foo.ListenerApplication;
-import com.springsource.open.foo.async.AbstractAsynchronousMessageTriggerTests.ConsumerConfiguration;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -37,27 +35,23 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.Lifecycle;
-import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.test.context.ContextConfiguration;
 
 import static org.junit.Assert.assertTrue;
 
-@SpringBootTest("spring.kafka.consumer.group-id=test")
-@ContextConfiguration(classes = { ListenerApplication.class, ConsumerConfiguration.class })
+@SpringBootTest("spring.kafka.consumer.group-id=group")
 public abstract class AbstractAsynchronousMessageTriggerTests implements ApplicationContextAware {
 
 	@Autowired
 	protected KafkaTemplate<Object, String> kafkaTemplate;
 
 	@Autowired
-	private Consumer<Object, String> consumer;
+	private ConsumerFactory<Object, String> consumerFactory;
 
 	@Autowired
 	private Handler handler;
@@ -105,25 +99,16 @@ public abstract class AbstractAsynchronousMessageTriggerTests implements Applica
 	protected abstract void checkPostConditions();
 
 	protected List<String> getMessages() {
+		Consumer<Object, String> consumer = consumerFactory.createConsumer();
+		consumer.subscribe(Pattern.compile("async"));
 		ConsumerRecords<Object, String> records = consumer.poll(Duration.ofSeconds(10));
 		List<String> msgs = new ArrayList<String>();
 		for (Iterator<ConsumerRecord<Object, String>> iter = records.iterator(); iter.hasNext();) {
 			ConsumerRecord<Object, String> record = iter.next();
 			msgs.add(record.value());
 		}
+		consumer.close();
 		return msgs;
-	}
-
-	@TestConfiguration(proxyBeanMethods = false)
-	protected static class ConsumerConfiguration {
-
-		@Bean
-		public Consumer<Object, String> testConsumer(ConsumerFactory<Object, String> consumerFactory) {
-			Consumer<Object, String> consumer = consumerFactory.createConsumer();
-			consumer.subscribe(Pattern.compile("async"));
-			return consumer;
-		}
-
 	}
 
 }
