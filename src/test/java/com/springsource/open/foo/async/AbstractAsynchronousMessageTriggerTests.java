@@ -107,6 +107,7 @@ public abstract class AbstractAsynchronousMessageTriggerTests implements Applica
 			ConsumerRecord<Object, String> record = iter.next();
 			msgs.add(record.value());
 		}
+		consumer.close();
 		return msgs;
 	}
 
