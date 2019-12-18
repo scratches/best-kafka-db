@@ -16,15 +16,17 @@
 
 package com.springsource.open.foo;
 
+import javax.sql.DataSource;
+
 import org.apache.kafka.clients.admin.NewTopic;
 
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
-import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.kafka.transaction.ChainedKafkaTransactionManager;
+import org.springframework.kafka.transaction.KafkaTransactionManager;
 
 @SpringBootApplication
 public class ListenerApplication {
@@ -35,18 +37,16 @@ public class ListenerApplication {
 	}
 
 	@Bean
-	public BeanPostProcessor kafkaTransactionPostProcessor(PlatformTransactionManager transactionManager) {
-		return new BeanPostProcessor() {
-			@Override
-			public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-				if (bean instanceof ConcurrentKafkaListenerContainerFactory) {
-					@SuppressWarnings("unchecked")
-					ConcurrentKafkaListenerContainerFactory<Object, Object> configurer = (ConcurrentKafkaListenerContainerFactory<Object, Object>) bean;
-					configurer.getContainerProperties().setTransactionManager(transactionManager);
-				}
-				return bean;
-			}
-		};
+	@Primary
+	public ChainedKafkaTransactionManager<Object, Object> chainedKafkaTransactionManager(
+			KafkaTransactionManager<String, String> ktm, DataSourceTransactionManager dstm) {
+
+		return new ChainedKafkaTransactionManager<>(ktm, dstm);
+	}
+
+	@Bean
+	public DataSourceTransactionManager dataSourceTransactionManager(DataSource dataSource) {
+		return new DataSourceTransactionManager(dataSource);
 	}
 
 	public static void main(String[] args) throws Exception {

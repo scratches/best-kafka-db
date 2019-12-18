@@ -24,13 +24,12 @@ import org.springframework.test.jdbc.JdbcTestUtils;
 
 import static org.junit.Assert.assertEquals;
 
-public class AsynchronousMessageTriggerAndPartialRollbackTests
-		extends AbstractAsynchronousMessageTriggerTests {
+public class AsynchronousMessageTriggerAndPartialRollbackTests extends AbstractAsynchronousMessageTriggerTests {
 
 	@Test
 	public void testPartialFailureWithDuplicateMessage() {
-		kafkaTemplate.send("async", "foo");
-		kafkaTemplate.send("async", "bar.fail.partial");
+		kafkaTemplate.executeInTransaction(t -> t.send("async", "foo"));
+		kafkaTemplate.executeInTransaction(t -> t.send("async", "bar.fail.partia"));
 	}
 
 	@Override

@@ -1,6 +1,5 @@
 package com.springsource.open.foo;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -8,13 +7,9 @@ import javax.sql.DataSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.TopicPartition;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,14 +21,12 @@ public class FooHandler implements Handler {
 
 	private final AtomicInteger count = new AtomicInteger(0);
 
-	private KafkaTemplate<Object, String> kafkaTemplate;
-
-	public FooHandler(DataSource dataSource, KafkaTemplate<Object, String> kafkaTemplate) {
-		this.kafkaTemplate = kafkaTemplate;
+	public FooHandler(DataSource dataSource) {
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
 	}
 
 	@Override
+	@KafkaListener(id = "group", topics = "async")
 	public void handle(String msg) {
 
 		log.debug("Received message: [" + msg + "]");
@@ -44,13 +37,6 @@ public class FooHandler implements Handler {
 
 		log.debug(String.format("Inserted foo with name=%s, date=%s", msg, date));
 
-	}
-
-	@KafkaListener(topics = "async")
-	public void handle(ConsumerRecord<Object, String> record) {
-		handle(record.value());
-		kafkaTemplate.sendOffsetsToTransaction(Collections.singletonMap(
-				new TopicPartition(record.topic(), record.partition()), new OffsetAndMetadata(record.offset() + 1)));
 	}
 
 	@Override

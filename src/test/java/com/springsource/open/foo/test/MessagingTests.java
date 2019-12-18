@@ -43,8 +43,8 @@ public class MessagingTests {
 	@BeforeEach
 	public void onSetUp() throws Exception {
 		Thread.sleep(100L);
-		kafkaTemplate.send("async", "foo");
-		kafkaTemplate.send("async", "bar");
+		kafkaTemplate.executeInTransaction(t -> t.send("async", "foo"));
+		kafkaTemplate.executeInTransaction(t -> t.send("async", "bar"));
 	}
 
 	@Test

@@ -24,13 +24,12 @@ import org.springframework.test.jdbc.JdbcTestUtils;
 
 import static org.junit.Assert.assertEquals;
 
-public class AsynchronousMessageTriggerSunnyDayTests
-		extends AbstractAsynchronousMessageTriggerTests {
+public class AsynchronousMessageTriggerSunnyDayTests extends AbstractAsynchronousMessageTriggerTests {
 
 	@Test
 	public void testCleanData() {
-		kafkaTemplate.send("async", "foo");
-		kafkaTemplate.send("async", "bar");
+		kafkaTemplate.executeInTransaction(t -> t.send("async", "foo"));
+		kafkaTemplate.executeInTransaction(t -> t.send("async", "bar"));
 	}
 
 	@Override
