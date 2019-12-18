@@ -16,13 +16,11 @@
 
 package com.springsource.open.foo.async;
 
-import java.util.List;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
 import org.springframework.test.jdbc.JdbcTestUtils;
-
-import static org.junit.Assert.assertEquals;
 
 public class AsynchronousMessageTriggerSunnyDayTests extends AbstractAsynchronousMessageTriggerTests {
 
@@ -33,13 +31,12 @@ public class AsynchronousMessageTriggerSunnyDayTests extends AbstractAsynchronou
 	}
 
 	@Override
-	protected void checkPostConditions() {
+	protected void checkPostConditions() throws Exception {
 
 		// Two messages committed
 		assertEquals(2, JdbcTestUtils.countRowsInTable(jdbcTemplate, "T_FOOS"));
-		List<String> list = getMessages();
-		// No messages rolled back so queue was empty
-		assertEquals(0, list.size());
+		// No messages rolled back so positioned at end (slot 1 and 3 contain tx state).
+		assertEquals(3, consumerOffset());
 
 	}
 

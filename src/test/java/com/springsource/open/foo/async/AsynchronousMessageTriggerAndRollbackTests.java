@@ -16,8 +16,6 @@
 
 package com.springsource.open.foo.async;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 
 import org.springframework.test.jdbc.JdbcTestUtils;
@@ -33,13 +31,12 @@ public class AsynchronousMessageTriggerAndRollbackTests extends AbstractAsynchro
 	}
 
 	@Override
-	protected void checkPostConditions() {
+	protected void checkPostConditions() throws Exception {
 
 		// One failed and rolled back, the other committed
 		assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate, "T_FOOS"));
-		List<String> list = getMessages();
 		// One message rolled back and returned to queue
-		assertEquals(1, list.size());
+		assertEquals(1, consumerOffset());
 
 	}
 

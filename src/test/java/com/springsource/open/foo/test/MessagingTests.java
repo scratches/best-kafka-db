@@ -18,18 +18,19 @@ package com.springsource.open.foo.test;
 
 import java.time.Duration;
 
-import com.springsource.open.foo.FooHandler;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.core.KafkaTemplate;
 
+import com.springsource.open.foo.FooHandler;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 @SpringBootTest
 public class MessagingTests {
@@ -41,7 +42,8 @@ public class MessagingTests {
 	private FooHandler consumer;
 
 	@BeforeEach
-	public void onSetUp() throws Exception {
+	public void onSetUp(@Autowired KafkaListenerEndpointRegistry registry) throws Exception {
+		registry.getListenerContainer("group").start();
 		Thread.sleep(100L);
 		kafkaTemplate.executeInTransaction(t -> t.send("async", "foo"));
 		kafkaTemplate.executeInTransaction(t -> t.send("async", "bar"));
@@ -49,7 +51,7 @@ public class MessagingTests {
 
 	@Test
 	public void testMessaging() throws Exception {
-		Awaitility.waitAtMost(Duration.ofSeconds(30)).until(this.consumer::getItemCount, not(equalTo(0)));
+		Awaitility.waitAtMost(Duration.ofSeconds(30)).until(this.consumer::getItemCount, greaterThanOrEqualTo(2));
 		assertThat(consumer.getItemCount()).isGreaterThanOrEqualTo(2);
 	}
 

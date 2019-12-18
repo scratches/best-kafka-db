@@ -26,7 +26,7 @@ public class FooHandler implements Handler {
 	}
 
 	@Override
-	@KafkaListener(id = "group", topics = "async")
+	@KafkaListener(id = "group", topics = "async", autoStartup = "false")
 	public void handle(String msg) {
 
 		log.debug("Received message: [" + msg + "]");
