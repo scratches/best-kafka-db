@@ -45,8 +45,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import static org.junit.Assert.assertTrue;
 
 @SpringBootTest
-public abstract class AbstractAsynchronousMessageTriggerTests
-		implements ApplicationContextAware {
+public abstract class AbstractAsynchronousMessageTriggerTests implements ApplicationContextAware {
 
 	@Autowired
 	protected KafkaTemplate<Object, String> kafkaTemplate;
@@ -67,8 +66,7 @@ public abstract class AbstractAsynchronousMessageTriggerTests
 	}
 
 	@Override
-	public void setApplicationContext(ApplicationContext applicationContext)
-			throws BeansException {
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		this.lifecycle = (Lifecycle) applicationContext;
 	}
 
@@ -92,8 +90,7 @@ public abstract class AbstractAsynchronousMessageTriggerTests
 		lifecycle.stop();
 		// Give it time to finish up...
 		Thread.sleep(2000);
-		assertTrue("Wrong item count: " + handler.getItemCount(),
-				handler.getItemCount() >= 2);
+		assertTrue("Wrong item count: " + handler.getItemCount(), handler.getItemCount() >= 2);
 
 		checkPostConditions();
 
@@ -106,8 +103,7 @@ public abstract class AbstractAsynchronousMessageTriggerTests
 		consumer.subscribe(Pattern.compile("async"));
 		ConsumerRecords<Object, String> records = consumer.poll(Duration.ofSeconds(10));
 		List<String> msgs = new ArrayList<String>();
-		for (Iterator<ConsumerRecord<Object, String>> iter = records.iterator(); iter
-				.hasNext();) {
+		for (Iterator<ConsumerRecord<Object, String>> iter = records.iterator(); iter.hasNext();) {
 			ConsumerRecord<Object, String> record = iter.next();
 			msgs.add(record.value());
 		}
