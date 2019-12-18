@@ -16,18 +16,14 @@
 
 package com.springsource.open.foo.async;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.regex.Pattern;
+import java.util.Collections;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.sql.DataSource;
 
-import com.springsource.open.foo.Handler;
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.admin.AdminClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -39,13 +35,20 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.Lifecycle;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
+import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.ConsumerFactory;
+import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.kafka.core.KafkaTemplate;
+
+import com.springsource.open.foo.Handler;
 
 import static org.junit.Assert.assertTrue;
 
 @SpringBootTest("spring.kafka.consumer.group-id=group")
 public abstract class AbstractAsynchronousMessageTriggerTests implements ApplicationContextAware {
+
+	private AdminClient client;
 
 	@Autowired
 	protected KafkaTemplate<Object, String> kafkaTemplate;
@@ -71,44 +74,60 @@ public abstract class AbstractAsynchronousMessageTriggerTests implements Applica
 	}
 
 	@BeforeEach
-	public void clearData() {
+	public void clearData(@Autowired KafkaAdmin admin, @Autowired KafkaListenerEndpointRegistry registry)
+			throws InterruptedException, ExecutionException, TimeoutException {
+
+		this.client = AdminClient.create(admin.getConfig());
+		this.client.deleteTopics(Collections.singletonList("async")).all().get(10, TimeUnit.SECONDS);
+		int n = 0;
+		while (n++ < 100) {
+			try {
+				this.client.createTopics(Collections.singletonList(
+						TopicBuilder.name("async")
+							.partitions(1)
+							.replicas(1)
+							.build())).all().get(10, TimeUnit.SECONDS);
+				break;
+			}
+			catch (ExecutionException e) {
+				// race with async topic deletion
+				Thread.sleep(100);
+			}
+		}
+
 		// Start the listeners...
-		lifecycle.start();
-		getMessages(); // drain queue
+		registry.getListenerContainer("group").start();
 		handler.resetItemCount();
 		jdbcTemplate.update("delete from T_FOOS");
 	}
 
 	@AfterEach
-	public void waitForMessages() throws Exception {
+	public void waitForMessages(@Autowired KafkaListenerEndpointRegistry registry) throws Exception {
 
 		int count = 0;
 		while (handler.getItemCount() < 2 && (count++) < 30) {
 			Thread.sleep(100);
 		}
 		// Stop the listeners...
-		lifecycle.stop();
+		registry.getListenerContainer("group").stop();
 		// Give it time to finish up...
 		Thread.sleep(2000);
 		assertTrue("Wrong item count: " + handler.getItemCount(), handler.getItemCount() >= 2);
 
 		checkPostConditions();
-
+		this.client.close();
 	}
 
-	protected abstract void checkPostConditions();
+	protected abstract void checkPostConditions() throws Exception;
 
-	protected List<String> getMessages() {
-		Consumer<Object, String> consumer = consumerFactory.createConsumer();
-		consumer.subscribe(Pattern.compile("async"));
-		ConsumerRecords<Object, String> records = consumer.poll(Duration.ofSeconds(10));
-		List<String> msgs = new ArrayList<String>();
-		for (Iterator<ConsumerRecord<Object, String>> iter = records.iterator(); iter.hasNext();) {
-			ConsumerRecord<Object, String> record = iter.next();
-			msgs.add(record.value());
-		}
-		consumer.close();
-		return msgs;
+	protected long consumerOffset() throws InterruptedException, ExecutionException, TimeoutException {
+		return this.client.listConsumerGroupOffsets("group")
+				.partitionsToOffsetAndMetadata()
+				.get(10, TimeUnit.SECONDS)
+				.values()
+				.iterator()
+				.next()
+				.offset();
 	}
 
 }
