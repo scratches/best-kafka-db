@@ -23,30 +23,24 @@ import java.util.concurrent.TimeoutException;
 
 import javax.sql.DataSource;
 
+import com.springsource.open.foo.Handler;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.Lifecycle;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.config.TopicBuilder;
-import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.kafka.core.KafkaTemplate;
-
-import com.springsource.open.foo.Handler;
 
 import static org.junit.Assert.assertTrue;
 
 @SpringBootTest("spring.kafka.consumer.group-id=group")
-public abstract class AbstractAsynchronousMessageTriggerTests implements ApplicationContextAware {
+public abstract class AbstractAsynchronousMessageTriggerTests {
 
 	private AdminClient client;
 
@@ -54,23 +48,13 @@ public abstract class AbstractAsynchronousMessageTriggerTests implements Applica
 	protected KafkaTemplate<Object, String> kafkaTemplate;
 
 	@Autowired
-	private ConsumerFactory<Object, String> consumerFactory;
-
-	@Autowired
 	private Handler handler;
 
 	protected JdbcTemplate jdbcTemplate;
 
-	private Lifecycle lifecycle;
-
 	@Autowired
 	public void setDataSource(@Qualifier("dataSource") DataSource dataSource) {
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
-	}
-
-	@Override
-	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		this.lifecycle = (Lifecycle) applicationContext;
 	}
 
 	@BeforeEach
@@ -82,11 +66,10 @@ public abstract class AbstractAsynchronousMessageTriggerTests implements Applica
 		int n = 0;
 		while (n++ < 100) {
 			try {
-				this.client.createTopics(Collections.singletonList(
-						TopicBuilder.name("async")
-							.partitions(1)
-							.replicas(1)
-							.build())).all().get(10, TimeUnit.SECONDS);
+				this.client
+						.createTopics(
+								Collections.singletonList(TopicBuilder.name("async").partitions(1).replicas(1).build()))
+						.all().get(10, TimeUnit.SECONDS);
 				break;
 			}
 			catch (ExecutionException e) {
@@ -121,13 +104,8 @@ public abstract class AbstractAsynchronousMessageTriggerTests implements Applica
 	protected abstract void checkPostConditions() throws Exception;
 
 	protected long consumerOffset() throws InterruptedException, ExecutionException, TimeoutException {
-		return this.client.listConsumerGroupOffsets("group")
-				.partitionsToOffsetAndMetadata()
-				.get(10, TimeUnit.SECONDS)
-				.values()
-				.iterator()
-				.next()
-				.offset();
+		return this.client.listConsumerGroupOffsets("group").partitionsToOffsetAndMetadata().get(10, TimeUnit.SECONDS)
+				.values().iterator().next().offset();
 	}
 
 }
