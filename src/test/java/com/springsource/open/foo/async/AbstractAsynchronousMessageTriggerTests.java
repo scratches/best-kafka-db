@@ -25,6 +25,7 @@ import com.springsource.open.foo.Handler;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -51,9 +52,10 @@ public abstract class AbstractAsynchronousMessageTriggerTests {
 	protected JdbcTemplate jdbcTemplate;
 
 	@BeforeEach
-	public void clearData(@Autowired KafkaAdmin admin, @Autowired KafkaListenerEndpointRegistry registry)
-			throws InterruptedException, ExecutionException, TimeoutException {
+	public void clearData(@Autowired KafkaAdmin admin, @Autowired KafkaListenerEndpointRegistry registry,
+			TestInfo testInfo) throws InterruptedException, ExecutionException, TimeoutException {
 
+		this.kafkaTemplate.setTransactionIdPrefix(testInfo.getDisplayName() + "-");
 		this.client = AdminClient.create(admin.getConfig());
 		this.client.deleteTopics(Collections.singletonList("async")).all().get(10, TimeUnit.SECONDS);
 		int n = 0;

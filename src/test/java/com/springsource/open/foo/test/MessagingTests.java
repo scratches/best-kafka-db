@@ -21,6 +21,7 @@ import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,7 +43,8 @@ public class MessagingTests {
 	private FooHandler consumer;
 
 	@BeforeEach
-	public void onSetUp(@Autowired KafkaListenerEndpointRegistry registry) throws Exception {
+	public void onSetUp(@Autowired KafkaListenerEndpointRegistry registry, TestInfo testInfo) throws Exception {
+		this.kafkaTemplate.setTransactionIdPrefix(testInfo.getDisplayName() + "-");
 		registry.getListenerContainer("group").start();
 		Thread.sleep(100L);
 		kafkaTemplate.executeInTransaction(t -> t.send("async", "foo"));
