@@ -21,15 +21,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.sql.DataSource;
-
 import com.springsource.open.foo.Handler;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
@@ -50,12 +47,8 @@ public abstract class AbstractAsynchronousMessageTriggerTests {
 	@Autowired
 	private Handler handler;
 
-	protected JdbcTemplate jdbcTemplate;
-
 	@Autowired
-	public void setDataSource(@Qualifier("dataSource") DataSource dataSource) {
-		this.jdbcTemplate = new JdbcTemplate(dataSource);
-	}
+	protected JdbcTemplate jdbcTemplate;
 
 	@BeforeEach
 	public void clearData(@Autowired KafkaAdmin admin, @Autowired KafkaListenerEndpointRegistry registry)
