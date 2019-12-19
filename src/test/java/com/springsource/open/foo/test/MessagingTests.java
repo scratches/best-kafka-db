@@ -18,6 +18,8 @@ package com.springsource.open.foo.test;
 
 import java.time.Duration;
 
+import com.springsource.open.foo.FooHandler;
+
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,13 +28,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.core.KafkaTemplate;
-
-import com.springsource.open.foo.FooHandler;
+import org.springframework.test.annotation.DirtiesContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 @SpringBootTest
+@DirtiesContext // when running from maven, the wrong listener is invoked
 public class MessagingTests {
 
 	@Autowired

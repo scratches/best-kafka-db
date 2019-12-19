@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.springsource.open.foo.Handler;
+
 import org.apache.kafka.clients.admin.AdminClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,10 +32,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.config.TopicBuilder;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.kafka.core.KafkaTemplate;
 
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest("spring.kafka.consumer.group-id=group")
 public abstract class AbstractAsynchronousMessageTriggerTests {
@@ -51,9 +53,11 @@ public abstract class AbstractAsynchronousMessageTriggerTests {
 	protected JdbcTemplate jdbcTemplate;
 
 	@BeforeEach
-	public void clearData(@Autowired KafkaAdmin admin, @Autowired KafkaListenerEndpointRegistry registry)
-			throws InterruptedException, ExecutionException, TimeoutException {
+	public void clearData(@Autowired KafkaAdmin admin, @Autowired KafkaListenerEndpointRegistry registry,
+			@Autowired DefaultKafkaProducerFactory<?, ?> pf)
+					throws InterruptedException, ExecutionException, TimeoutException {
 
+		pf.reset(); // close the producer(s) because his metadata will be invalidated when we delete the topic
 		this.client = AdminClient.create(admin.getConfig());
 		this.client.deleteTopics(Collections.singletonList("async")).all().get(10, TimeUnit.SECONDS);
 		int n = 0;
@@ -72,8 +76,8 @@ public abstract class AbstractAsynchronousMessageTriggerTests {
 		}
 
 		// Start the listeners...
-		registry.getListenerContainer("group").start();
 		handler.resetItemCount();
+		registry.getListenerContainer("group").start();
 		jdbcTemplate.update("delete from T_FOOS");
 	}
 
@@ -88,7 +92,7 @@ public abstract class AbstractAsynchronousMessageTriggerTests {
 		registry.getListenerContainer("group").stop();
 		// Give it time to finish up...
 		Thread.sleep(2000);
-		assertTrue("Wrong item count: " + handler.getItemCount(), handler.getItemCount() >= 2);
+		assertThat(handler.getItemCount()).isGreaterThanOrEqualTo(2);
 
 		checkPostConditions();
 		this.client.close();
