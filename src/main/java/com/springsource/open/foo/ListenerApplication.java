@@ -25,11 +25,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
-import org.springframework.kafka.support.LogIfLevelEnabled.Level;
 import org.springframework.kafka.transaction.ChainedKafkaTransactionManager;
 import org.springframework.kafka.transaction.KafkaTransactionManager;
-import org.springframework.stereotype.Component;
 
 @SpringBootApplication
 public class ListenerApplication {
@@ -54,15 +51,6 @@ public class ListenerApplication {
 
 	public static void main(String[] args) throws Exception {
 		SpringApplication.run(ListenerApplication.class, args);
-	}
-
-}
-
-@Component
-class ContainerConfigurer {
-
-	public ContainerConfigurer(ConcurrentKafkaListenerContainerFactory<?, ?> factory) {
-		factory.getContainerProperties().setCommitLogLevel(Level.INFO);
 	}
 
 }
